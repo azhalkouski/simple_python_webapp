@@ -45,3 +45,7 @@ def search4letters(phrase: str, letters: str = 'aeiou') -> set:
 
 # Source of static files
 - https://github.com/EiChinn/HeadFirstPython2/blob/master/chapter5/webapp/static/hf.css
+
+
+## Some commands
+- pycodestyle vsearch4web.py - check for PEP8 compliance

@@ -1,14 +1,14 @@
 from flask import Flask, render_template, request
 from vsearch import search4letters
 
+'''The __name__ value (maintained by the interpreter) identifies 
+the currently active module.'''
 app = Flask(__name__)
 
 
-@app.route('/')
-def hello() -> str:
-    return 'Hello world from Flask!'
-
-
+'''The @ symbol before a function's name identifies it as a decorator. 
+Decorators let you change the behaviour of an existing function without 
+having to change the function's code. A function can be decorated more than once'''
 @app.route('/search4', methods=['POST'])
 def do_search() -> 'html':
     phrase = request.form['phrase']
@@ -22,9 +22,11 @@ def do_search() -> 'html':
                            the_results=results)
 
 
+@app.route('/')
 @app.route('/entry')
 def entry_page() -> 'html':
     return render_template('entry.html',
                            the_title='Welcome to search4letters on the web!')
+
 
 app.run(debug=True)
