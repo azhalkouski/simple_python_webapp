@@ -62,7 +62,7 @@ def entry_page() -> 'html':
 
 
 @app.route('/viewlogfromfile')
-def view_the_log() -> 'html':
+def view_the_log_from_file() -> 'html':
     contents = []
     with open('vsearch.log') as log:
         for line in log:
@@ -70,6 +70,19 @@ def view_the_log() -> 'html':
             for item in line.split('|'):
                 contents[-1].append(escape(item))
     titles = ('Form data', 'Remote addr', 'User_agent', 'Results')
+    return render_template('viewlog.html',
+                           the_title='View Log',
+                           the_row_titles=titles,
+                           the_data=contents)
+
+"""View logs stored in database"""
+@app.route('/viewlog')
+def view_the_log_from_db() -> 'html':
+    with UseDatabase(app.config['dbconfig']) as cursor:
+        _SQL = """select phrase, letters, ip, browser_string, results from log"""
+        cursor.execute(_SQL)
+        contents = cursor.fetchall()
+    titles = ('Phrase', 'Letters', 'User_agent', 'Results')
     return render_template('viewlog.html',
                            the_title='View Log',
                            the_row_titles=titles,
