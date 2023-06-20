@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, escape
 from vsearch import search4letters
-import mysql.connector
+from DBcm import UseDatabase
 
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
@@ -24,21 +24,16 @@ def log_request(req: 'flask_request', res= 'flask_response') -> None:
       'database': 'vsearchlogDB',
     }
 
-    conn = mysql.connector.connect(**dbconfig)
-    cursor = conn.cursor()
-    _SQL = """insert into log
+    with UseDatabase(dbconfig) as cursor:
+        _SQL = """insert into log
               (phrase, letters, ip, browser_string, results)
               values
               (%s, %s, %s, %s, %s)"""
-    cursor.execute(_SQL, (req.form['phrase'],
+        cursor.execute(_SQL, (req.form['phrase'],
                           req.form['letters'],
                           req.remote_addr,
                           'Chrome', # hardcoded for demo purpose
                           res, ))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
 
 
 '''The @ symbol before a function's name identifies it as a decorator. 
