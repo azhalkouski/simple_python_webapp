@@ -1,11 +1,18 @@
 from flask import Flask, render_template, request, escape
 from vsearch import search4letters
+
 from DBcm import UseDatabase
 
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
 app = Flask(__name__)
 
+app.config['dbconfig'] = {
+  'host': '127.0.0.1',
+  'user': '', # sensetive data should be provided from outside
+  'password': '', # sensetive data should be provided from outside
+  'database': 'vsearchlogDB',
+}
 
 def log_request(req: 'flask_request', res= 'flask_response') -> None:
     with open('vsearch.log', 'a') as log:
@@ -16,15 +23,8 @@ def log_request(req: 'flask_request', res= 'flask_response') -> None:
             res,
             file=log,
             sep='|')
-    
-    dbconfig = {
-      'host': '127.0.0.1',
-      'user': '', # sensetive data should be provided from outside
-      'password': '', # sensetive data should be provided from outside
-      'database': 'vsearchlogDB',
-    }
 
-    with UseDatabase(dbconfig) as cursor:
+    with UseDatabase(app.config['dbconfig']) as cursor:
         _SQL = """insert into log
               (phrase, letters, ip, browser_string, results)
               values
