@@ -61,7 +61,7 @@ def entry_page() -> 'html':
                            the_title='Welcome to search4letters on the web!')
 
 
-@app.route('/viewlog')
+@app.route('/viewlogfromfile')
 def view_the_log() -> 'html':
     contents = []
     with open('vsearch.log') as log:
