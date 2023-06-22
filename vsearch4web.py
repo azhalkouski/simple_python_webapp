@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, escape, session
 from vsearch import search4letters
 
 from DBcm import UseDatabase
+from checker import check_logged_in
 
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
@@ -72,6 +73,7 @@ def entry_page() -> 'html':
 
 
 @app.route('/viewlogfromfile')
+@check_logged_in
 def view_the_log_from_file() -> 'html':
     contents = []
     with open('vsearch.log') as log:
@@ -87,6 +89,7 @@ def view_the_log_from_file() -> 'html':
 
 """View logs stored in database"""
 @app.route('/viewlog')
+@check_logged_in
 def view_the_log_from_db() -> 'html':
     with UseDatabase(app.config['dbconfig']) as cursor:
         _SQL = """select phrase, letters, ip, browser_string, results from log"""
