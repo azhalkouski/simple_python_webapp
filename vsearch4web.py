@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, escape
+from flask import Flask, render_template, request, escape, session
 from vsearch import search4letters
 
 from DBcm import UseDatabase
@@ -6,6 +6,16 @@ from DBcm import UseDatabase
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
 app = Flask(__name__)
+
+
+'''Flask's documentation suggests picking a secret key that is hard to guess, 
+but any stringed value works here. Flask uses the string to encrypt your 
+coockie prior to transmitting it to your browser.
+
+Any data stored in session is keyed by a unique browser coockie, which 
+ensures your session data is kept away from that of every other user 
+of your app.'''
+app.secret_key = 'YouWillNeverGuess'
 
 app.config['dbconfig'] = {
   'host': '127.0.0.1',
@@ -87,6 +97,18 @@ def view_the_log_from_db() -> 'html':
                            the_title='View Log',
                            the_row_titles=titles,
                            the_data=contents)
+
+
+@app.route('/login')
+def do_login() -> str:
+    session['logged_in'] = True
+    return 'You are now logged in.'
+
+
+@app.route('/logout')
+def do_logout() -> str:
+    session.pop('logged_in')
+    return 'You are now logged out'
 
 
 '''Prepare for deployment to AWS PythonAnywhere's cloud-hosted environment'''
