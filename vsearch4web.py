@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, escape, session
+from flask import Flask, render_template, request, escape, session, \
+  copy_current_request_context
+from threading import Thread
 from vsearch import search4letters
 
 from DBcm import UseDatabase, ConnectionError, CredentialsError, SQLError
@@ -25,27 +27,6 @@ app.config['dbconfig'] = {
   'database': 'vsearchlogDB',
 }
 
-def log_request(req: 'flask_request', res= 'flask_response') -> None:
-    with open('vsearch.log', 'a') as log:
-        print(
-            req.form,
-            req.remote_addr,
-            req.user_agent,
-            res,
-            file=log,
-            sep='|')
-
-    with UseDatabase(app.config['dbconfig']) as cursor:
-        _SQL = """insert into log
-              (phrase, letters, ip, browser_string, results)
-              values
-              (%s, %s, %s, %s, %s)"""
-        cursor.execute(_SQL, (req.form['phrase'],
-                          req.form['letters'],
-                          req.remote_addr,
-                          'Chrome', # hardcoded for demo purpose
-                          res, ))
-
 
 '''The @ symbol before a function's name identifies it as a decorator. 
 Decorators let you change the behaviour of an existing function without 
@@ -53,12 +34,38 @@ having to change the function's code.
 A function can be decorated more than once'''
 @app.route('/search4', methods=['POST'])
 def do_search() -> 'html':
+    
+    @copy_current_request_context
+    def log_request(req: 'flask_request', res= 'flask_response') -> None:
+        # simulate slow execution with time.sleep
+        # time.sleep(15)
+        with open('vsearch.log', 'a') as log:
+            print(
+                req.form,
+                req.remote_addr,
+                req.user_agent,
+                res,
+                file=log,
+                sep='|')
+
+        with UseDatabase(app.config['dbconfig']) as cursor:
+            _SQL = """insert into log
+                  (phrase, letters, ip, browser_string, results)
+                  values
+                  (%s, %s, %s, %s, %s)"""
+            cursor.execute(_SQL, (req.form['phrase'],
+                              req.form['letters'],
+                              req.remote_addr,
+                              'Chrome', # hardcoded for demo purpose
+                              res, ))
+        
     phrase = request.form['phrase']
     letters = request.form['letters']
     title = 'Here are your results:'
     results = str(search4letters(phrase, letters))
     try:
-      log_request(request, results)
+      t = Thread(target=log_request, args=(request, results))
+      t.start()
     except Exception as err:
         print('***** Logging failed with this error:', str(err))
     return render_template('results.html',
