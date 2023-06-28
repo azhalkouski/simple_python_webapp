@@ -2,7 +2,7 @@ from functools import wraps
 from DBcm import ConnectionError, CredentialsError, SQLError
 
 
-def try_interact_with_database(func):
+def try_interact_with_db(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:

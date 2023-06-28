@@ -3,9 +3,10 @@ from flask import Flask, render_template, request, escape, session, \
 from threading import Thread
 from vsearch import search4letters
 
-from DBcm import UseDatabase, ConnectionError, CredentialsError, SQLError
+from DBcm import UseDatabase
 from checker import check_logged_in
-from trydbinteract import try_interact_with_database
+from trydbinteract import try_interact_with_db
+from tryfileinteract import try_interact_with_file
 
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
@@ -36,20 +37,11 @@ A function can be decorated more than once'''
 @app.route('/search4', methods=['POST'])
 def do_search() -> 'html':
     
-    @try_interact_with_database
+    @try_interact_with_db
     @copy_current_request_context
-    def log_request(req: 'flask_request', res= 'flask_response') -> None:
+    def log_request_to_db(req: 'flask_request', res= 'flask_response') -> None:
         # simulate slow execution with time.sleep
         # time.sleep(15)
-        with open('vsearch.log', 'a') as log:
-            print(
-                req.form,
-                req.remote_addr,
-                req.user_agent,
-                res,
-                file=log,
-                sep='|')
-
         with UseDatabase(app.config['dbconfig']) as cursor:
             _SQL = """insert into log
                   (phrase, letters, ip, browser_string, results)
@@ -61,13 +53,29 @@ def do_search() -> 'html':
                               'Chrome', # hardcoded for demo purpose
                               res, ))
 
+    @try_interact_with_file
+    @copy_current_request_context
+    def log_request_to_file(req: 'flask_request', res= 'flask_response') -> None:
+        # simulate slow execution with time.sleep
+        # time.sleep(15)
+        with open('vsearch.log', 'a') as log:
+            print(
+                req.form,
+                req.remote_addr,
+                req.user_agent,
+                res,
+                file=log,
+                sep='|')
+
     phrase = request.form['phrase']
     letters = request.form['letters']
     title = 'Here are your results:'
     results = str(search4letters(phrase, letters))
     try:
-      t = Thread(target=log_request, args=(request, results))
-      t.start()
+      t_db = Thread(target=log_request_to_db, args=(request, results))
+      t_file = Thread(target=log_request_to_file, args=(request, results))
+      t_db.start()
+      t_file.start()
     except Exception as err:
         print('***** Logging failed with this error:', str(err))
     return render_template('results.html',
@@ -102,7 +110,7 @@ def view_the_log_from_file() -> 'html':
 """View logs stored in database"""
 @app.route('/viewlog')
 @check_logged_in
-@try_interact_with_database
+@try_interact_with_db
 def view_the_log_from_db() -> 'html':
     with UseDatabase(app.config['dbconfig']) as cursor:
         _SQL = """select phrase, letters, ip, browser_string, results from log"""
