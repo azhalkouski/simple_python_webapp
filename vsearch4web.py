@@ -5,6 +5,7 @@ from vsearch import search4letters
 
 from DBcm import UseDatabase, ConnectionError, CredentialsError, SQLError
 from checker import check_logged_in
+from trydbinteract import try_interact_with_database
 
 '''The __name__ value (maintained by the interpreter) identifies 
 the currently active module.'''
@@ -35,6 +36,7 @@ A function can be decorated more than once'''
 @app.route('/search4', methods=['POST'])
 def do_search() -> 'html':
     
+    @try_interact_with_database
     @copy_current_request_context
     def log_request(req: 'flask_request', res= 'flask_response') -> None:
         # simulate slow execution with time.sleep
@@ -58,7 +60,7 @@ def do_search() -> 'html':
                               req.remote_addr,
                               'Chrome', # hardcoded for demo purpose
                               res, ))
-        
+
     phrase = request.form['phrase']
     letters = request.form['letters']
     title = 'Here are your results:'
@@ -100,26 +102,17 @@ def view_the_log_from_file() -> 'html':
 """View logs stored in database"""
 @app.route('/viewlog')
 @check_logged_in
+@try_interact_with_database
 def view_the_log_from_db() -> 'html':
-    try:
-        with UseDatabase(app.config['dbconfig']) as cursor:
-            _SQL = """select phrase, letters, ip, browser_string, results from log"""
-            cursor.execute(_SQL)
-            contents = cursor.fetchall()
-        titles = ('Phrase', 'Letters', 'User_agent', 'Results')
-        return render_template('viewlog.html',
-                              the_title='View Log',
-                              the_row_titles=titles,
-                              the_data=contents)
-    except ConnectionError as err:
-        print('***** Is your database switched on? Error:', str(err))
-    except CredentialsError as err:
-        print('***** User-id/Password issues. Error:', str(err))
-    except SQLError as err:
-        print('***** Is your query correct? Error:', str(err))
-    except Exception as err:
-        print('***** Something went wrong:', str(err))
-    return 'Error'
+    with UseDatabase(app.config['dbconfig']) as cursor:
+        _SQL = """select phrase, letters, ip, browser_string, results from log"""
+        cursor.execute(_SQL)
+        contents = cursor.fetchall()
+    titles = ('Phrase', 'Letters', 'User_agent', 'Results')
+    return render_template('viewlog.html',
+                          the_title='View Log',
+                          the_row_titles=titles,
+                          the_data=contents)
 
 
 @app.route('/login')
